@@ -7,14 +7,14 @@
 
 class FIRAgent
 {
-private:
+public:
 	int brd[15][15];
 	int root_score[15][15];
 	int Self, Opp;
 	int Turn, SelfTurn;
 	int MaxDepth;
 
-private:
+public:
 	int AgentSearch(int depth, int alpha, int beta, int score[15][15]);
 	int Evaluate(int depth);
 	void CheckContinuous(int Color, int Nums[3][5]);
@@ -31,7 +31,7 @@ public:
 
 };
 
-FIRAgent::FIRAgent(int AgentColor, int SearchDepth = 2, int GameMode = 0)
+FIRAgent::FIRAgent(int AgentColor, int SearchDepth = 3, int GameMode = 0)
 {
 	memset(brd, 0, sizeof(brd));
 	Self = AgentColor;
@@ -96,18 +96,18 @@ int FIRAgent::Evaluate(int depth)
 {
 	int score = 0, score2;
 	int nums[3][5];
-	
+
 	CheckContinuous(Self, nums);
-	
+
 	if (depth & 1)
 		score += ContinuousScoreOpp(nums);
 	else
 		score += ContinuousScoreSelf(nums);
 	CheckContinuous(Opp, nums);
 	if (depth & 1)
-		score -= ContinuousScoreSelf(nums);
+		score -= 2 * ContinuousScoreSelf(nums);
 	else
-		score -= ContinuousScoreOpp(nums);
+		score -= 2 * ContinuousScoreOpp(nums);
 
 	return score;
 }
@@ -116,8 +116,8 @@ int FIRAgent::ContinuousScoreOpp(int Nums[3][5])
 {
 	int score = 0;
 	score += Nums[2][1] *  2 + Nums[1][1] * 1;
-	score += Nums[2][2] * 20 + Nums[1][2] * 5;
-	score += Nums[1][3] * 15;
+	score += Nums[2][2] * 10 + Nums[1][2] * 5;
+	score += Nums[1][3] * 50;
 	if (Nums[2][3] > 1)
 		score += 1000;
 	else if (Nums[2][3] > 0)
@@ -126,7 +126,8 @@ int FIRAgent::ContinuousScoreOpp(int Nums[3][5])
 		score += 2000;
 	else if (Nums[1][4] > 0)
 		score += 1500;
-	score += Nums[2][4] * 3000;
+    if (Nums[2][4] > 0)
+        score += 4000;
 	return score;
 }
 
@@ -134,8 +135,10 @@ int FIRAgent::ContinuousScoreSelf(int Nums[3][5])
 {
 	int score = 0;
 	score += Nums[2][1] *  2 + Nums[1][1] * 1;
-	score += Nums[2][2] * 30 + Nums[1][2] * 5;
-	score += Nums[2][3] * 1000 + Nums[1][3] * 20;
+	score += Nums[2][2] * 20 + Nums[1][2] * 5;
+	score += Nums[1][3] * 50;
+	if (Nums[2][3] > 0)
+        score += 2000;
 	if (Nums[2][4] > 0 || Nums[1][4] > 0)
 		score = 9999999;
 	return score;
@@ -154,10 +157,10 @@ int FIRAgent::CheckOver()
 				for (k = 0; k < 5 && j + k < 15 && brd[i][j + k] == brd[i][j]; k++)
 					if (k == 4)
 						return brd[i][j];
-				for (k = 0; k < 4 && j + k < 15 && brd[i + k][j + k] == brd[i][j]; k++)
+				for (k = 0; k < 5 && j + k < 15 && brd[i + k][j + k] == brd[i][j]; k++)
 					if (k == 4)
 						return brd[i][j];
-				for (k = 0; k < 4 && j - k >= 0 && brd[i + k][j - k] == brd[i][j]; k++)
+				for (k = 0; k < 5 && j - k >= 0 && brd[i + k][j - k] == brd[i][j]; k++)
 					if (k == 4)
 						return brd[i][j];
 			}
@@ -167,16 +170,13 @@ int FIRAgent::CheckOver()
 int FIRAgent::AgentSearch(int depth, int alpha, int beta, int score[15][15])
 {
 	int winner = CheckOver();
-	printf("hehe %d\n", depth);
 	//PrintChess();
 	if (winner)
-		return (winner == Self) ? 9999999 : -9999999;
+		return (winner == Self) ? 9999999 - depth : -9999999;
 	if (depth > MaxDepth)
 	{
 		/*evaluate chess situation*/
-		PrintChess();
 		int ret = Evaluate(depth);
-		printf("%d\n=================\n", ret);
 		return ret;
 	}
 	int i, j, ret = (depth & 1) ? INT_MAX : -INT_MAX;
@@ -221,20 +221,18 @@ int FIRAgent::AgentSearch(int depth, int alpha, int beta, int score[15][15])
 			{
 				/*min Node*/
 				ret = std::min(ret, val);
+				subbeta = std::min(subbeta, val);
 				if (val <= alpha)
 					break;
-				else
-					subalpha = std::max(subalpha, val);
 			}
 			else
 			{
 				/*MAX Node*/
 				ret = std::max(ret, val);
+				subalpha = std::max(subalpha, val);
 				if (val >= beta)
 					break;
-				else
-					subbeta = std::min(subbeta, val);
-			}		
+			}
 		}
 	}
 	return ret;
@@ -244,7 +242,7 @@ void FIRAgent::AgentGo()
 {
 	if ((Turn & 1) != SelfTurn)
 		return;
-	memset(root_score, 0, sizeof(root_score));
+	memset(root_score, 0x80, sizeof(root_score));
 	if (0 == Turn)	// First step
 	{
 		brd[7][7] = Self;
@@ -252,15 +250,31 @@ void FIRAgent::AgentGo()
 	else
 	{
 		int alpha = -INT_MAX, beta = INT_MAX;
+		int max_x = -1, max_y = -1, max_v = -INT_MAX;
 		AgentSearch(0, alpha, beta, root_score);
+
+		for (int i = 0; i < 15; i++)
+			for (int j = 0; j < 15; j++)
+				if (root_score[i][j] > max_v)
+				{
+					max_v = root_score[i][j];
+					max_x = i;
+					max_y = j;
+				}
+		if (max_x >= 0 && max_y >= 0)
+			brd[max_x][max_y] = Self;
+        printf("AgentGo: %d %d\n", max_x, max_y);
 	}
 
 	for (int i = 0; i < 15; i++)
+	{
 		for (int j = 0; j < 15; j++)
-			if (14 == j)
-				printf("%d\n", root_score[i][j]);
+			if (root_score[i][j] < -99999999)
+				printf("x ");
 			else
 				printf("%d ", root_score[i][j]);
+		printf("\n");
+	}
 	++Turn;
 }
 
@@ -278,9 +292,9 @@ void FIRAgent::PrintChess()
 	for (i = 0; i < 15; i++)
 	{
 		for (j = 0; j < 15; j++)
-			if (brd[i][j] == Self)
+			if (brd[i][j] == 1)
 				printf("* ");
-			else if (brd[i][j] == Opp)
+			else if (brd[i][j] == 2)
 				printf("o ");
 			else
 				printf(". ");
@@ -288,11 +302,24 @@ void FIRAgent::PrintChess()
 	}
 }
 
-FIRAgent agent(2);
+FIRAgent agent(1);
 
 int main()
 {
-	agent.HumanGo(7, 7);
-	agent.AgentGo();
+	while (!agent.CheckOver())
+	{
+	    int x, y;
+
+		agent.AgentGo();
+		agent.PrintChess();
+		printf("================================\n");
+		scanf("%d%d", &x, &y);
+		agent.HumanGo(x, y);
+	}
+	//agent.brd[7][7] = 1;
+	//agent.brd[5][5] = 2;
+	//agent.brd[6][6] = 2;
+	//agent.PrintChess();
+	//printf("%d\n", agent.Evaluate(0));
 	return 0;
 }
