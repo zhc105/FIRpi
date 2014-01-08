@@ -1,21 +1,38 @@
 CC = g++
-CFLAGS = -g `mysql_config --cflags`
-LIBS = -lwiringPi `mysql_config --libs`
+CFLAGS = -g
+LIBS = -lm -lpthread
+SOURCES = IFIRAgent.cpp FIRAgent.cpp FIRDaemon.cpp main.cpp
+OBJS = IFIRAgent.o FIRAgent.o FIRDaemon.o main.o
+TARGET = FIRDaemon
 
-TempMonitor: TempMonitor.o BMP085.o
-	$(CC) $(LIBS) -o TempMonitor TempMonitor.o BMP085.o
+$(TARGET): $(OBJS) 
+	$(CC) $(OBJS) -o $(TARGET) $(LIBS) 
 
-TempMonitor.o: TempMonitor.cpp 
-	$(CC) $(CFLAGS) -c TempMonitor.cpp
+IFIRAgent.o: IFIRAgent.cpp IFIRAgent.h
+	$(CC) $(CFLAGS) -c IFIRAgent.cpp
 
-BMP085.o: BMP085.cpp BMP085.h
-	$(CC) $(CFLAGS) -c BMP085.cpp
+FIRAgent.o: FIRAgent.cpp FIRAgent.h
+	$(CC) $(CFLAGS) -c FIRAgent.cpp
 
-TempMonitor.cpp:
+FIRDaemon.o: FIRDaemon.cpp FIRDaemon.h
+	$(CC) $(CFLAGS) -c FIRDaemon.cpp
 
-BMP085.cpp:
+main.o:	main.cpp
+	$(CC) $(CFLAGS) -c main.cpp
 
-BMP085.h:
+IFIRAgent.cpp:
+
+IFIRAgent.h:
+
+FIRAgent.cpp:
+
+FIRAgent.h:
+
+FIRDaemon.cpp:
+
+FIRDaemon.h:
+
+main.cpp:
 
 clean:
-	rm TempMonitor.o BMP085.o TempMonitor
+	rm $(TARGET) $(OBJS)
