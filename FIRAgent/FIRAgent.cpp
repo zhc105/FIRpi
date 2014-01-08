@@ -109,7 +109,7 @@ int FIRAgent::ContinuousScoreSelf(int Nums[3][5])
 	if (Nums[2][3] > 0)
         score += 2000;
 	if (Nums[2][4] > 0 || Nums[1][4] > 0)
-		score = +999999;
+		score += 999999;
 	return score;
 }
 
