@@ -1,37 +1,6 @@
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <algorithm>
+#include "FIRAgent.h"
 
-#define INT_MAX 0x7FFFFFFF
-
-class FIRAgent
-{
-public:
-	int brd[15][15];
-	int root_score[15][15];
-	int Self, Opp;
-	int Turn, SelfTurn;
-	int MaxDepth;
-
-public:
-	int AgentSearch(int depth, int alpha, int beta, int score[15][15]);
-	int Evaluate(int depth);
-	void CheckContinuous(int Color, int Nums[3][5]);
-	int ContinuousScoreOpp(int Nums[3][5]);		// Evaluate score (Opp turn)
-	int ContinuousScoreSelf(int Nums[3][5]);	// Evaluate score (Self turn)
-
-public:
-	FIRAgent(int AgentColor, int SearchDepth, int GameMode);
-	void AgentGo();
-	void HumanGo(int x, int y);
-	int CheckOver();
-
-	void PrintChess();
-
-};
-
-FIRAgent::FIRAgent(int AgentColor, int SearchDepth = 3, int GameMode = 0)
+FIRAgent::FIRAgent(int AgentColor, int SearchDepth = 3, int GameMode = 0) : IFIRAgent("zhc105")
 {
 	memset(brd, 0, sizeof(brd));
 	Self = AgentColor;
@@ -140,7 +109,7 @@ int FIRAgent::ContinuousScoreSelf(int Nums[3][5])
 	if (Nums[2][3] > 0)
         score += 2000;
 	if (Nums[2][4] > 0 || Nums[1][4] > 0)
-		score = 9999999;
+		score = +999999;
 	return score;
 }
 
@@ -282,6 +251,8 @@ void FIRAgent::HumanGo(int x, int y)
 {
 	if ((Turn & 1) == SelfTurn)
 		return;
+	if (x < 0 || y < 0 || x >= 15 || y >= 15 || brd[x][y])
+		return;
 	brd[x][y] = Opp;
 	++Turn;
 }
@@ -302,24 +273,3 @@ void FIRAgent::PrintChess()
 	}
 }
 
-FIRAgent agent(1);
-
-int main()
-{
-	while (!agent.CheckOver())
-	{
-	    int x, y;
-
-		agent.AgentGo();
-		agent.PrintChess();
-		printf("================================\n");
-		scanf("%d%d", &x, &y);
-		agent.HumanGo(x, y);
-	}
-	//agent.brd[7][7] = 1;
-	//agent.brd[5][5] = 2;
-	//agent.brd[6][6] = 2;
-	//agent.PrintChess();
-	//printf("%d\n", agent.Evaluate(0));
-	return 0;
-}
