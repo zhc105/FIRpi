@@ -232,9 +232,9 @@ void FIRAgent::AgentGo()
 				}
 		if (max_x >= 0 && max_y >= 0)
 			brd[max_x][max_y] = Self;
-        printf("AgentGo: %d %d\n", max_x, max_y);
+        	//printf("AgentGo: %d %d\n", max_x, max_y);
 	}
-
+	/*
 	for (int i = 0; i < 15; i++)
 	{
 		for (int j = 0; j < 15; j++)
@@ -243,7 +243,7 @@ void FIRAgent::AgentGo()
 			else
 				printf("%d ", root_score[i][j]);
 		printf("\n");
-	}
+	}*/
 	++Turn;
 }
 
@@ -255,6 +255,15 @@ void FIRAgent::HumanGo(int x, int y)
 		return;
 	brd[x][y] = Opp;
 	++Turn;
+}
+
+void FIRAgent::GetStatus(int (*Board)[15], bool& HumanTurn)
+{
+	memcpy(Board, brd, sizeof(brd));
+	if ((Turn & 1) != SelfTurn)
+		HumanTurn = true;
+	else
+		HumanTurn = false;
 }
 
 void FIRAgent::PrintChess()
