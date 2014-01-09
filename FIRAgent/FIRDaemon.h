@@ -1,6 +1,7 @@
 #ifndef _FIRDAEMON_H_
 #define _FIRDAEMON_H_
 
+#include <socket.h>
 #include "IFIRAgent.h"
 #include "FIRAgent.h"
 
@@ -8,7 +9,7 @@ class FIRDaemon
 {
 private:
 	int Turn;
-	bool Busy;
+	bool Busy, HumanTurn;
 	int Brd[15][15];
 	IFIRAgent *Agent;
 
