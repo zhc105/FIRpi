@@ -4,6 +4,7 @@
 #include <socket.h>
 #include "IFIRAgent.h"
 #include "FIRAgent.h"
+#include "MyLock.h"
 
 class FIRDaemon
 {
@@ -12,6 +13,7 @@ private:
 	bool Busy, HumanTurn;
 	int Brd[15][15];
 	IFIRAgent *Agent;
+	MyLock lock;
 
 public:
 	FIRDaemon();
@@ -21,6 +23,8 @@ public:
 	void CreateAgent(std::string AgentName, int AgentColor);	
 	// return JSON String to represent the board, busy status, turn number and ...
 	std::string GetStatusJson();
+
+	static void * AgentAction(void *arg);
 
 };
 

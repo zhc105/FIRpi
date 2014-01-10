@@ -1,4 +1,5 @@
 #include <unistd.h>
+#include <pthread.h>
 #include "FIRDaemon.h"
 
 FIRDaemon::FIRDaemon()
@@ -25,7 +26,10 @@ void FIRAgent::CreateAgent(std::string AgentName, int AgentColor)
 		Agent = new FIRAgent(AgentColor, 3, 0);
 		Turn = 1;
 	}
-	Agent->GetStatus(Brd, HumanTurn); 
+	/* Get initial status */
+	lock.Lock();
+	Agent->GetStatus(Brd, HumanTurn);
+	lock.UnLock();
 }
 
 
