@@ -1,8 +1,8 @@
 CC = g++
 CFLAGS = -g
 LIBS = -lm -lpthread
-SOURCES = IFIRAgent.cpp FIRAgent.cpp FIRDaemon.cpp MyLock.cpp main.cpp
-OBJS = IFIRAgent.o FIRAgent.o FIRDaemon.o MyLock.o main.o
+SOURCES = IFIRAgent.cpp FIRAgent.cpp FIRDaemon.cpp MyLock.cpp MyLog.cpp main.cpp
+OBJS = IFIRAgent.o FIRAgent.o FIRDaemon.o MyLock.o MyLog.o main.o
 TARGET = FIRDaemon
 
 $(TARGET): $(OBJS) 
@@ -19,6 +19,9 @@ FIRDaemon.o: FIRDaemon.cpp FIRDaemon.h
 
 MyLock.o: MyLock.cpp MyLock.h
 	$(CC) $(CFLAGS) -c MyLock.cpp
+
+MyLog.o: MyLog.cpp MyLog.h
+	$(CC) $(CFLAGS) -c MyLog.cpp
 
 main.o:	main.cpp
 	$(CC) $(CFLAGS) -c main.cpp
@@ -38,6 +41,10 @@ FIRDaemon.h:
 MyLock.cpp:
 
 MyLock.h:
+
+MyLog.cpp:
+
+MyLog.h:
 
 main.cpp:
 
