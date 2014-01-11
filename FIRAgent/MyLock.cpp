@@ -17,7 +17,7 @@ bool MyLock::Lock()
     return true;
 }
 
-bool MyLock::UnLock()
+bool MyLock::Unlock()
 {
     if ( sem_post(&sem) != 0 )
         return false;

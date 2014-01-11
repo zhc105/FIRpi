@@ -12,7 +12,7 @@ public:
 	MyLock();
 	~MyLock();
 	bool Lock();
-	bool UnLock();
+	bool Unlock();
 
 };
 

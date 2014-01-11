@@ -257,13 +257,14 @@ void FIRAgent::HumanGo(int x, int y)
 	++Turn;
 }
 
-void FIRAgent::GetStatus(int (*Board)[15], bool& HumanTurn)
+void FIRAgent::GetStatus(int (*Board)[15], bool& HumanTurn, int& TotalTurns)
 {
 	memcpy(Board, brd, sizeof(brd));
 	if ((Turn & 1) != SelfTurn)
 		HumanTurn = true;
 	else
 		HumanTurn = false;
+	TotalTurns = Turn;
 }
 
 void FIRAgent::PrintChess()

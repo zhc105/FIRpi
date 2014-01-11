@@ -29,7 +29,7 @@ public:
         FIRAgent(int AgentColor, int SearchDepth, int GameMode);
         void AgentGo();
         void HumanGo(int x, int y);
-	void GetStatus(int (*Board)[15], bool& HumanTurn);
+	void GetStatus(int (*Board)[15], bool& HumanTurn, int& TotalTurns);
 	int CheckOver();
 
         void PrintChess();

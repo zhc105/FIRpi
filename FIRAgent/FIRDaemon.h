@@ -12,10 +12,12 @@ class FIRDaemon
 {
 private:
 	int Turn;
-	bool Busy, HumanTurn;
 	int Brd[15][15];
+	int Winner;
+	bool Busy, HumanTurn;
 	IFIRAgent *Agent;
 	MyLock lock;
+	pthread_t AgentThread;
 
 	void AgentController(int csock);
 	// AgentColor: 1 - Agent first, 2 - Agent last
@@ -24,6 +26,7 @@ private:
 	std::string GetStatusJson();
 	// a thread routine to wait Agent 
 	static void * AgentAction(void *arg);
+	void HumanGo(int x, int y);
 
 public:
 	FIRDaemon();

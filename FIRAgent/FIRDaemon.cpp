@@ -2,6 +2,7 @@
 #include <pthread.h>
 #include <fcntl.h>
 #include <cstring>
+#include <cstdlib>
 #include "FIRDaemon.h"
 #include "MyLog.h"
 
@@ -27,18 +28,28 @@ void FIRDaemon::AgentController(int csock)
 
 	if (!strcmp(cmd, "start"))
 	{
-		MyLog::WriteLog("Request to start game.", 0);
+		char name[50];
+		int color;
+		MyLog::WriteLog("Client request to start game.", 0);
+
+		sscanf(buf, "%s %s %d", cmd, name, &color);
+		CreateAgent(std::string(name), color);
 	}
 	else if (!strcmp(cmd, "status"))
 	{
-		MyLog::WriteLog("Request to get status,", 0);
+		MyLog::WriteLog("Client request to get status,", 0);
 	}
 	else if (!strcmp(cmd, "set"))
 	{
+		int x, y;
+
+		sscanf(buf, "%s %d %d", cmd, &x, &y);
+		HumanGo(x, y);
 	}
 	else if (!strcmp(cmd, "print"))
 	{
 		int i, j;
+		lock.Lock();
 		for (i = 0; i < 15; i++)
 		{
 			for (j = 0; j < 15; j++)
@@ -50,7 +61,48 @@ void FIRDaemon::AgentController(int csock)
 					send(csock, ". ", 2, 0);
 			send(csock, "\r\n", 2, 0);
 		}
+		lock.Unlock();
 	}
+}
+
+void * FIRDaemon::AgentAction(void *arg)
+{
+	FIRDaemon *daemon = (FIRDaemon *) arg;
+
+	daemon->Busy = false;
+	return (void *) 0;
+}
+
+void FIRDaemon::HumanGo(int x, int y)
+{
+	char msg[50];
+	snprintf(msg, sizeof(msg), "Client request to set a chess on %d, %d", x, y);
+	MyLog::WriteLog(msg, 0);
+	
+	if (Busy) 
+		return;
+
+	lock.Lock();
+	if (HumanTurn && !Winner && Agent != NULL)
+	{
+		Agent->HumanGo(x, y);
+		Winner = Agent->CheckOver();
+		Agent->GetStatus(Brd, HumanTurn, Turn);
+		while (!Winner && !HumanTurn)
+		{
+			// Agent Turn (create new thread)
+			Busy = true;
+			int ret = pthread_create(&AgentThread, NULL, AgentAction, this);
+			if (ret != 0)
+			{
+				std::string errmsg = "cannot create thread: ";
+				errmsg += strerror(ret);
+				MyLog::WriteLog(errmsg.c_str(), 2);
+				exit(-5);
+			}
+		}
+	}
+	lock.Unlock();
 }
 
 int FIRDaemon::Start()
@@ -115,14 +167,27 @@ void FIRDaemon::CreateAgent(std::string AgentName, int AgentColor)
 		if (Agent != NULL)
 			delete Agent;
 		Agent = new FIRAgent(AgentColor, 3, 0);
-		Turn = 1;
 	}
 	/* Get initial status */
 	lock.Lock();
-	Agent->GetStatus(Brd, HumanTurn);
-	lock.UnLock();
+	Winner = 0;
+	Agent->GetStatus(Brd, HumanTurn, Turn);
 
-	MyLog::WriteLog("Game restart!", 0);
+	while (!Winner && !HumanTurn)
+	{
+		Agent->AgentGo();
+		Agent->GetStatus(Brd, HumanTurn, Turn);
+		Winner = Agent->CheckOver();
+	}
+	lock.Unlock();
+
+	std::string msg = "Game restart: ";
+	msg += AgentName + " ";
+	if (AgentColor == 1)
+		msg += "first";
+	else
+		msg += "last";
+	MyLog::WriteLog(msg.c_str(), 0);
 }
 
 
