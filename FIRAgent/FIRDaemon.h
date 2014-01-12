@@ -17,16 +17,19 @@ private:
 	bool Busy, HumanTurn;
 	IFIRAgent *Agent;
 	MyLock lock;
+	sem_t event;
 	pthread_t AgentThread;
+	int csock;
 
 	void AgentController(int csock);
 	// AgentColor: 1 - Agent first, 2 - Agent last
 	void CreateAgent(std::string AgentName, int AgentColor);	
 	// return JSON String to represent the board, busy status, turn number and ...
 	std::string GetStatusJson();
+	void HumanGo(int x, int y);
 	// a thread routine to wait Agent 
 	static void * AgentAction(void *arg);
-	void HumanGo(int x, int y);
+	static void * ClientThread(void *arg);
 
 public:
 	FIRDaemon();

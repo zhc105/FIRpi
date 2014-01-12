@@ -11,6 +11,7 @@ FIRDaemon::FIRDaemon()
 {
 	Busy = false;
 	Agent = NULL;
+	sem_init(&event, 0, 0);
 }
 
 void FIRDaemon::AgentController(int csock)
@@ -88,6 +89,19 @@ void * FIRDaemon::AgentAction(void *arg)
 	return (void *) 0;
 }
 
+void * FIRDaemon::ClientThread(void *arg)
+{
+	pthread_detach(pthread_self());
+	FIRDaemon *daemon = (FIRDaemon *) arg;
+	int csock = daemon->csock;
+	sem_post(&daemon->event);
+
+	daemon->AgentController(csock);
+	shutdown(csock, SHUT_WR);
+	close(csock);
+	return (void *) 0;
+}
+
 void FIRDaemon::HumanGo(int x, int y)
 {
 	char msg[50];
@@ -156,7 +170,7 @@ std::string FIRDaemon::GetStatusJson()
 
 int FIRDaemon::Start()
 {
-	int ssock, csock;
+	int ssock;
 	socklen_t sin_size;
 	struct sockaddr_in saddr, caddr;
 
@@ -198,9 +212,17 @@ int FIRDaemon::Start()
 			return -4;
 		}
 
-		AgentController(csock);
-		shutdown(csock, SHUT_WR);
-		close(csock);
+		pthread_t ctid;
+		int ret = pthread_create(&ctid, NULL, ClientThread, this);
+		if (ret != 0)
+		{
+			std::string errmsg = "cannot create thread: ";
+			errmsg += strerror(ret);
+			MyLog::WriteLog(errmsg.c_str(), 2);
+			shutdown(csock, SHUT_WR);
+			close(csock);
+		}
+		sem_wait(&event);
 	}
 
 	close(ssock);
