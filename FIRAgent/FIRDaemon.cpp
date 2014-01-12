@@ -3,6 +3,7 @@
 #include <fcntl.h>
 #include <cstring>
 #include <cstdlib>
+#include <sstream>
 #include "FIRDaemon.h"
 #include "MyLog.h"
 
@@ -32,19 +33,22 @@ void FIRDaemon::AgentController(int csock)
 		int color;
 		MyLog::WriteLog("Client request to start game.", 0);
 
-		sscanf(buf, "%s %s %d", cmd, name, &color);
-		CreateAgent(std::string(name), color);
+		if (sscanf(buf, "%s %s %d", cmd, name, &color) == 3)
+			CreateAgent(std::string(name), color);
 	}
 	else if (!strcmp(cmd, "status"))
 	{
 		MyLog::WriteLog("Client request to get status,", 0);
+
+		std::string json = GetStatusJson();
+		send(csock, json.c_str(), json.length(), 0);
 	}
 	else if (!strcmp(cmd, "set"))
 	{
 		int x, y;
 
-		sscanf(buf, "%s %d %d", cmd, &x, &y);
-		HumanGo(x, y);
+		if (sscanf(buf, "%s %d %d", cmd, &x, &y) == 3)
+			HumanGo(x, y);
 	}
 	else if (!strcmp(cmd, "print"))
 	{
@@ -67,7 +71,18 @@ void FIRDaemon::AgentController(int csock)
 
 void * FIRDaemon::AgentAction(void *arg)
 {
+	pthread_detach(pthread_self());	// Automatic release of resource 
 	FIRDaemon *daemon = (FIRDaemon *) arg;
+
+	while (!daemon->Winner && !daemon->HumanTurn)
+	{
+		daemon->Agent->AgentGo();
+		// Update status
+		daemon->lock.Lock();
+		daemon->Agent->GetStatus(daemon->Brd, daemon->HumanTurn, daemon->Turn);
+		daemon->Winner = daemon->Agent->CheckOver();
+		daemon->lock.Unlock();
+	}
 
 	daemon->Busy = false;
 	return (void *) 0;
@@ -79,18 +94,21 @@ void FIRDaemon::HumanGo(int x, int y)
 	snprintf(msg, sizeof(msg), "Client request to set a chess on %d, %d", x, y);
 	MyLog::WriteLog(msg, 0);
 	
-	if (Busy) 
-		return;
-
 	lock.Lock();
+	if (Busy)
+	{
+		lock.Unlock();
+		return;
+	}
 	if (HumanTurn && !Winner && Agent != NULL)
 	{
 		Agent->HumanGo(x, y);
+		// Update status
 		Winner = Agent->CheckOver();
 		Agent->GetStatus(Brd, HumanTurn, Turn);
-		while (!Winner && !HumanTurn)
+		if (!Winner && !HumanTurn)
 		{
-			// Agent Turn (create new thread)
+			// Agent turn (create new thread)
 			Busy = true;
 			int ret = pthread_create(&AgentThread, NULL, AgentAction, this);
 			if (ret != 0)
@@ -105,13 +123,44 @@ void FIRDaemon::HumanGo(int x, int y)
 	lock.Unlock();
 }
 
+std::string FIRDaemon::GetStatusJson()
+{
+	std::stringstream json;
+	bool not_first = false;
+
+	// Package current status with json format
+	json << "{";
+
+	lock.Lock();
+	json << "\"Turn\":" << Turn;
+	json << ",\"HumanTurn\":" << (HumanTurn ? 1 : 0);
+	json << ",\"Winner\":" << Winner;
+	json << ",\"Busy\":" << (Busy ? 1 : 0);
+	json << ",\"Board\":[";
+	for(int i = 0; i < 15; i++)
+		for (int j = 0; j < 15; j++)
+			if (Brd[i][j])
+			{
+				if (not_first)
+					json << ",";
+				else
+					not_first = true;
+				json << "{\"x\":" << i << ",\"y\":" << j << ",\"c\":" << Brd[i][j] << "}";
+			}
+	json << "]";
+	lock.Unlock();
+
+	json << "}";
+	return json.str();
+}
+
 int FIRDaemon::Start()
 {
 	int ssock, csock;
 	socklen_t sin_size;
 	struct sockaddr_in saddr, caddr;
 
-	//daemon(1, 0);
+	daemon(1, 0);
 	MyLog::WriteLog("Initializing server...", 0);
 
 	ssock = socket(AF_INET, SOCK_STREAM, 0);
@@ -167,6 +216,11 @@ void FIRDaemon::CreateAgent(std::string AgentName, int AgentColor)
 		if (Agent != NULL)
 			delete Agent;
 		Agent = new FIRAgent(AgentColor, 3, 0);
+	}
+	else
+	{
+		MyLog::WriteLog("Agent not found!", 1);
+		return;
 	}
 	/* Get initial status */
 	lock.Lock();
