@@ -142,7 +142,7 @@ int FIRAgent::AgentSearch(int depth, int alpha, int beta, int score[15][15])
 	//PrintChess();
 	if (winner)
 		return (winner == Self) ? 9999999 - depth : -9999999;
-	if (depth > MaxDepth)
+	if (depth >= MaxDepth)
 	{
 		/*evaluate chess situation*/
 		int ret = Evaluate(depth);
