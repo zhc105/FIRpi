@@ -32,15 +32,12 @@ void FIRDaemon::AgentController(int csock)
 	{
 		char name[50];
 		int color;
-		MyLog::WriteLog("Client request to start game.", 0);
 
 		if (sscanf(buf, "%s %s %d", cmd, name, &color) == 3)
 			CreateAgent(std::string(name), color);
 	}
 	else if (!strcmp(cmd, "status"))
 	{
-		MyLog::WriteLog("Client request to get status,", 0);
-
 		std::string json = GetStatusJson();
 		send(csock, json.c_str(), json.length(), 0);
 	}

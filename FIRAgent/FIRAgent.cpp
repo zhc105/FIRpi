@@ -116,20 +116,20 @@ int FIRAgent::ContinuousScoreSelf(int Nums[3][5])
 int FIRAgent::CheckOver()
 {
 	int i, j, k;
-	for (i = 0; i < 11; i++)
+	for (i = 0; i < 15; i++)
 		for (j = 0; j < 15; j++)
 			if (brd[i][j])
 			{
-				for (k = 0; k < 5 && brd[i + k][j] == brd[i][j]; k++)
+				for (k = 0; k < 5 && i + k < 15 && brd[i + k][j] == brd[i][j]; k++)
 					if (k == 4)
 						return brd[i][j];
 				for (k = 0; k < 5 && j + k < 15 && brd[i][j + k] == brd[i][j]; k++)
 					if (k == 4)
 						return brd[i][j];
-				for (k = 0; k < 5 && j + k < 15 && brd[i + k][j + k] == brd[i][j]; k++)
+				for (k = 0; k < 5 && i + k < 15 && j + k < 15 && brd[i + k][j + k] == brd[i][j]; k++)
 					if (k == 4)
 						return brd[i][j];
-				for (k = 0; k < 5 && j - k >= 0 && brd[i + k][j - k] == brd[i][j]; k++)
+				for (k = 0; k < 5 && i + k < 15 && j - k >= 0 && brd[i + k][j - k] == brd[i][j]; k++)
 					if (k == 4)
 						return brd[i][j];
 			}
