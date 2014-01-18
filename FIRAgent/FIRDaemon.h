@@ -13,7 +13,7 @@ class FIRDaemon
 private:
 	int Turn;
 	int Brd[15][15];
-	int Winner;
+	int Winner, AgentColor;
 	bool Busy, HumanTurn;
 	IFIRAgent *Agent;
 	MyLock lock;

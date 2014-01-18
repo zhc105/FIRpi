@@ -3,87 +3,124 @@
 FIRAgent::FIRAgent(int AgentColor, int SearchDepth = 3, int GameMode = 0) : IFIRAgent("zhc105")
 {
 	memset(brd, 0, sizeof(brd));
+	memset(SRange, 0x7f, sizeof(SRange));
+	memset(MaxNums, 0, sizeof(MaxNums));
+	stk = 0;
 	Self = AgentColor;
 	Opp = (1 == Self) ? 2 : 1;
 	Turn = 0;
 	SelfTurn = Self - 1;
 	MaxDepth = SearchDepth;
+	InitVector();
 }
 
-void FIRAgent::CheckContinuous(int Color, int (* Nums)[5])
+int FIRAgent::ScanLine(int Color, int Line[6], int& Type)
 {
-	int i, j, k, t;
-	memset(Nums, 0, sizeof(int) * 3 * 5);
-	for (i = 0; i < 15; i++)
-		for (j = 0; j < 15; j++)
-			if (brd[i][j] == Color)
+	bool dead = false, border = false;
+	int num = 0, hole = 0, space = 0;
+	for (int i = 0; i < 6; i++)
+	{
+		if (Line[i] == 0)
+		{
+			if (num > 0)
+				++space;
+		}
+		else if (Line[i] == Color)
+		{
+			++num;
+			hole += space;
+			space = 0;
+			if (0 == i|| 5 == i)
+				border = true;
+		}
+		else
+		{
+			if ((0 == i || 5 == i) && !dead)
 			{
-				if (0 == i || brd[i - 1][j] != brd[i][j])			// Column
-				{
-					t = 2;
-					if (0 == i || brd[i - 1][j] != 0)
-						--t;
-					for (k = 0; k < 4 && i + k < 15 && brd[i + k][j] == brd[i][j]; k++);
-					if (i + k >= 15 || brd[i + k][j] != 0)
-						--t;
-					++Nums[t][k];
-				}
-				if (0 == j || brd[i][j - 1] != brd[i][j])			// Row
-				{
-					t = 2;
-					if (0 == j || brd[i][j - 1] != 0)
-						--t;
-					for (k = 0; k < 4 && j + k < 15 && brd[i][j + k] == brd[i][j]; k++);
-					if (j + k >= 15 || brd[i][j + k] != 0)
-						--t;
-					++Nums[t][k];
-				}
-				if (0 == i || 0 == j || brd[i - 1][j - 1] != brd[i][j])		// slash
-				{
-					t = 2;
-					if (0 == i || 0 == j || brd[i - 1][j - 1] != 0)
-						--t;
-					for (k = 0; k < 4 && i + k < 15 && j + k < 15 && brd[i + k][j + k] == brd[i][j]; k++);
-					if (i + k >= 15 || j + k >= 15 || brd[i + k][j + k] != 0)
-						--t;
-					++Nums[t][k];
-				}
-				if (0 == i || 14 == j || brd[i - 1][j + 1] != brd[i][j])	// backlash
-				{
-					t = 2;
-					if (0 == i || 14 == j || brd[i - 1][j + 1] != 0)
-						--t;
-					for (k = 0; k < 4 && i + k < 15 && j - k >= 0 && brd[i + k][j - k] == brd[i][j]; k++);
-					if (i + k >= 15 || j - k < 0 || brd[i + k][j - k] != 0)
-						--t;
-					++Nums[t][k];
-				}
+				dead = true;
 			}
+			else
+			{
+				num = 0;
+				break;
+			}
+		}
+	}
+	if (num >= 5)
+	{
+		if (hole)
+		{
+			Type = 1;
+			return 4;
+		}
+		else
+		{
+			if (dead)
+				Type = 1;
+			else
+				Type = 0;
+			return 5;
+		}
+	}
+	else
+	{
+		if (hole >= 3) --num;
+		if (hole || dead || border)
+			Type = 1;
+		else
+			Type = 0;
+		return num;
+	}
 }
 
-int FIRAgent::Evaluate(int depth)
+void FIRAgent::UpdateVector(int VecId)
 {
-	int score = 0, score2;
-	int nums[3][5];
+	VectorStart vec = Vecs[VecId];
+	int x, y, i, now = 0, num, sum = 0, line[30], t;
 
-	CheckContinuous(Self, nums);
+	memset(MaxNums[VecId], 0, sizeof(MaxNums[VecId]));
 
-	if (depth & 1)
-		score += ContinuousScoreOpp(nums);
-	else
-		score += ContinuousScoreSelf(nums);
-	CheckContinuous(Opp, nums);
-	if (depth & 1)
-		score -= 2 * ContinuousScoreSelf(nums);
-	else
-		score -= 2 * ContinuousScoreOpp(nums);
-
-	return score;
+	x = vec.x;
+	y = vec.y;
+	line[0] = brd[x][y];
+	sum += line[0];
+	while (VALID(x, y))
+	{
+		x += vec.dx;
+		y += vec.dy;
+		if (VALID(x, y))
+			line[++now] = brd[x][y];
+		else
+			line[++now] = 3;		// out of border
+		sum += line[now];
+		if (now > 5)
+			sum -= line[now - 6];
+		if (now >= 5 && sum > 0)
+		{
+			num = ScanLine(1, line + (now - 5), t); // scan black chess
+			MaxNums[VecId][t][0] = std::max(MaxNums[VecId][t][0], num);
+			num = ScanLine(2, line + (now - 5), t); // scan white chess
+			MaxNums[VecId][t][1] = std::max(MaxNums[VecId][t][1], num);
+		}
+	}
 }
 
-int FIRAgent::ContinuousScoreOpp(int Nums[3][5])
+void FIRAgent::CountNums(int c, int Nums[3][6])
 {
-	int score = 0;
+	memset(Nums, 0, sizeof(int) * 3 * 6);
+	for (int i = 0; i < 72; i++)
+	{
+		if (MaxNums[i][1][c] > MaxNums[i][0][c])
+			++Nums[1][MaxNums[i][1][c]];
+		else
+			++Nums[2][MaxNums[i][0][c]];
+	}
+}
+
+int FIRAgent::ContinuousScoreOpp(int Color)
+{
+	int score = 0, Nums[3][6];
+	CountNums(Color - 1, Nums);
 	score += Nums[2][1] *  2 + Nums[1][1] * 1;
 	score += Nums[2][2] * 10 + Nums[1][2] * 5;
 	score += Nums[1][3] * 50;
@@ -91,25 +128,52 @@ int FIRAgent::ContinuousScoreOpp(int Nums[3][5])
 		score += 1000;
 	else if (Nums[2][3] > 0)
 		score += 100;
-	if (Nums[1][4] > 1)
+	if (Nums[2][3] > 0 && Nums[1][4] > 0)
+		score += 1500;
+	if (Nums[1][4] > 1)	
 		score += 2000;
 	else if (Nums[1][4] > 0)
-		score += 1500;
-    if (Nums[2][4] > 0)
-        score += 4000;
+		score += 1000;
+	if (Nums[2][4] > 0)
+		score += 4000;
+	if (Nums[1][5] > 0)
+		score += 999999;
+	if (Nums[2][5] > 0)
+		score += 1100000;
 	return score;
 }
 
-int FIRAgent::ContinuousScoreSelf(int Nums[3][5])
+int FIRAgent::ContinuousScoreSelf(int Color)
 {
-	int score = 0;
+	int score = 0, Nums[3][6];
+	CountNums(Color - 1, Nums);
 	score += Nums[2][1] *  2 + Nums[1][1] * 1;
 	score += Nums[2][2] * 20 + Nums[1][2] * 5;
 	score += Nums[1][3] * 50;
 	if (Nums[2][3] > 0)
-        score += 2000;
+		score += 2000;
 	if (Nums[2][4] > 0 || Nums[1][4] > 0)
-		score += 999999;
+		score += 20000;
+	if (Nums[1][5] > 0)
+		score += 1100000;
+	if (Nums[2][5] > 0)
+		score += 1200000;
+	return score;
+}
+
+int FIRAgent::Evaluate(int depth)
+{
+	int score = 0;
+	if (depth & 1)
+	{
+		score += ContinuousScoreOpp(Self);
+		score -= 2 * ContinuousScoreSelf(Opp);
+	}
+	else
+	{
+		score += ContinuousScoreSelf(Self);
+		score -= 2 * ContinuousScoreOpp(Opp);
+	}
 	return score;
 }
 
@@ -136,54 +200,73 @@ int FIRAgent::CheckOver()
 	return 0;
 }
 
+void FIRAgent::ChessSet(int d, int x, int y, int c, bool bak = false)
+{
+	if (!VALID(x, y))
+		return;
+	if (VALID(x - 1, y) && d < SRange[x - 1][y]) SRange[x - 1][y] = d;
+	if (VALID(x - 2, y) && d < SRange[x - 2][y]) SRange[x - 2][y] = d;
+	if (VALID(x - 1, y + 1) && d < SRange[x - 1][y + 1]) SRange[x - 1][y + 1] = d;
+	if (VALID(x - 2, y + 2) && d < SRange[x - 2][y + 2]) SRange[x - 2][y + 2] = d;
+	if (VALID(x, y + 1) && d < SRange[x][y + 1]) SRange[x][y + 1] = d;
+	if (VALID(x, y + 2) && d < SRange[x][y + 2]) SRange[x][y + 2] = d;
+	if (VALID(x + 1, y + 1) && d < SRange[x + 1][y + 1]) SRange[x + 1][y + 1] = d;
+	if (VALID(x + 2, y + 2) && d < SRange[x + 2][y + 2]) SRange[x + 2][y + 2] = d;
+	if (VALID(x + 1, y) && d < SRange[x + 1][y]) SRange[x + 1][y] = d;
+	if (VALID(x + 2, y) && d < SRange[x + 2][y]) SRange[x + 2][y] = d;
+	if (VALID(x + 1, y - 1) && d < SRange[x + 1][y - 1]) SRange[x + 1][y - 1] = d;
+	if (VALID(x + 2, y - 2) && d < SRange[x + 2][y - 2]) SRange[x + 2][y - 2] = d;
+	if (VALID(x, y - 1) && d < SRange[x][y - 1]) SRange[x][y - 1] = d;
+	if (VALID(x, y - 2) && d < SRange[x][y - 2]) SRange[x][y - 2] = d;
+	if (VALID(x - 1, y - 1) && d < SRange[x - 1][y - 1]) SRange[x - 1][y - 1] = d;
+	if (VALID(x - 2, y - 2) && d < SRange[x - 2][y - 2]) SRange[x - 2][y - 2] = d;
+	brd[x][y] = c;
+	// Update vector
+	for (std::vector<int>::iterator p = AssocVec[x][y].begin(); p != AssocVec[x][y].end(); p++)
+	{
+		//if (bak)
+		//	memcpy(&VecBak[stk++][0][0], &MaxNums[*p][0][0], sizeof(VecBak[0]));
+		//if (stk > 30) printf("%d\n", stk);
+		UpdateVector(*p);
+	}
+}
+
+void FIRAgent::ChessClear(int x, int y)
+{
+	brd[x][y] = 0;
+	// recovery vector
+	for (std::vector<int>::reverse_iterator p = AssocVec[x][y].rbegin(); p != AssocVec[x][y].rend(); p++)
+	{
+		//memcpy(MaxNums[*p], VecBak[--stk], sizeof(VecBak[0]));
+		//--stk;
+		
+		UpdateVector(*p);
+	}
+}
+
 int FIRAgent::AgentSearch(int depth, int alpha, int beta, int score[15][15])
 {
-	int winner = CheckOver();
-	//PrintChess();
-	if (winner)
-		return (winner == Self) ? 9999999 - depth : -9999999;
+	int val = Evaluate(depth);
+	if (val > 900000 || val < -900000)
+		return val;
+	//printf("score: %d\n", val);
 	if (depth >= MaxDepth)
-	{
-		/*evaluate chess situation*/
-		int ret = Evaluate(depth);
-		return ret;
-	}
+		return val;
 	int i, j, ret = (depth & 1) ? INT_MAX : -INT_MAX;
 	int subalpha = alpha, subbeta = beta;
-	bool can[15][15] = { 0 };
-	/*Note the position that agent could choose*/
-	for (i = 0; i < 15; i++)
-		for (j = 0; j < 15; j++)
-			if (brd[i][j] > 0)
-			{
-				if (i > 0 && !brd[i - 1][j]) can[i - 1][j] = true;
-				if (i > 1 && !brd[i - 2][j]) can[i - 2][j] = true;
-				if (i > 0 && j < 14 && !brd[i - 1][j + 1]) can[i - 1][j + 1] = true;
-				if (i > 1 && j < 13 && !brd[i - 2][j + 2]) can[i - 2][j + 2] = true;
-				if (j < 14 && !brd[i][j + 1]) can[i][j + 1] = true;
-				if (j < 13 && !brd[i][j + 2]) can[i][j + 2] = true;
-				if (i < 14 && j < 14 && !brd[i + 1][j + 1]) can[i + 1][j + 1] = true;
-				if (i < 13 && j < 13 && !brd[i + 2][j + 2]) can[i + 2][j + 2] = true;
-				if (i < 14 && !brd[i + 1][j]) can[i + 1][j] = true;
-				if (i < 13 && !brd[i + 2][j]) can[i + 2][j] = true;
-				if (i < 14 && j > 0 && !brd[i + 1][j - 1]) can[i + 1][j - 1] = true;
-				if (i < 13 && j > 1 && !brd[i + 2][j - 2]) can[i + 2][j - 2] = true;
-				if (j > 0 && !brd[i][j - 1]) can[i][j - 1] = true;
-				if (j > 1 && !brd[i][j - 2]) can[i][j - 2] = true;
-				if (i > 0 && j > 0 && !brd[i - 1][j - 1]) can[i - 1][j - 1] = true;
-				if (i > 1 && j > 1 && !brd[i - 2][j - 2]) can[i - 2][j - 2] = true;
-			}
-
+	int SRange_bak[15][15];
+	
 	/*Search subnodes*/
+	memcpy(SRange_bak, SRange, sizeof(SRange));
 	for (i = 0; i < 15 * 15; i++)
 	{
 		int x = i / 15, y = i % 15;
-		if (can[x][y])
+		if (Turn + depth > SRange[x][y] && !brd[x][y])
 		{
 			int sub_score[15][15] = { 0 };
-			brd[x][y] = (depth & 1) ? Opp : Self;	// set chess
+			ChessSet(Turn + depth, x, y, (depth & 1) ? Opp : Self, true);	// set chess
 			int val = AgentSearch(depth + 1, subalpha, subbeta, sub_score);	// search subnode
-			brd[x][y] = 0;				// clear chess
+			ChessClear(x, y);					// clear chess
 
 			score[x][y] = val;
 			if (depth & 1)
@@ -204,6 +287,7 @@ int FIRAgent::AgentSearch(int depth, int alpha, int beta, int score[15][15])
 			}
 		}
 	}
+	memcpy(SRange, SRange_bak, sizeof(SRange));
 	return ret;
 }
 
@@ -214,7 +298,7 @@ void FIRAgent::AgentGo()
 	memset(root_score, 0x80, sizeof(root_score));
 	if (0 == Turn)	// First step
 	{
-		brd[7][7] = Self;
+		ChessSet(0, 7, 7, Self, false);
 	}
 	else
 	{
@@ -231,10 +315,10 @@ void FIRAgent::AgentGo()
 					max_y = j;
 				}
 		if (max_x >= 0 && max_y >= 0)
-			brd[max_x][max_y] = Self;
-        	//printf("AgentGo: %d %d\n", max_x, max_y);
+			ChessSet(Turn, max_x, max_y, Self, false);
+        	printf("AgentGo: %d %d\n", max_x, max_y);
 	}
-	/*
+
 	for (int i = 0; i < 15; i++)
 	{
 		for (int j = 0; j < 15; j++)
@@ -243,7 +327,7 @@ void FIRAgent::AgentGo()
 			else
 				printf("%d ", root_score[i][j]);
 		printf("\n");
-	}*/
+	}
 	++Turn;
 }
 
@@ -251,9 +335,9 @@ void FIRAgent::HumanGo(int x, int y)
 {
 	if ((Turn & 1) == SelfTurn)
 		return;
-	if (x < 0 || y < 0 || x >= 15 || y >= 15 || brd[x][y])
+	if (!VALID(x, y) || brd[x][y])
 		return;
-	brd[x][y] = Opp;
+	ChessSet(Turn, x, y, Opp, false);
 	++Turn;
 }
 
@@ -280,6 +364,59 @@ void FIRAgent::PrintChess()
 			else
 				printf(". ");
 		printf("\n");
+	}
+}
+
+void FIRAgent::InitVector()
+{
+	int VecNo = 0, i, j, k;
+	Vecs.clear();
+
+	// row vector
+	for (i = 0; i < 15; i++)
+	{
+		Vecs.push_back(VectorStart(i, 0, 0, 1));
+		for (j = 0; j < 15; j++)
+			AssocVec[i][j].push_back(VecNo);
+		++VecNo;
+	}
+	// column vector
+	for (j = 0; j < 15; j++)
+	{
+		Vecs.push_back(VectorStart(0, j, 1, 0));
+		for (i = 0; i < 15; i++)
+			AssocVec[i][j].push_back(VecNo);
+		++VecNo;
+	}
+	// slash vector
+	for (i = 0; i < 11; i++)
+	{
+		Vecs.push_back(VectorStart(i, 0, 1, 1));
+		for (j = i, k = 0; VALID(j, k); j++, k++)
+			AssocVec[j][k].push_back(VecNo);
+		++VecNo;
+	}
+	for (j = 1; j < 11; j++)
+	{
+		Vecs.push_back(VectorStart(0, j, 1, 1));
+		for (i = 0, k = j; VALID(i, k); i++, k++)
+			AssocVec[i][k].push_back(VecNo);
+		++VecNo;
+	}
+	// backlash vector
+	for (i = 0; i < 11; i++)
+	{
+		Vecs.push_back(VectorStart(i, 14, 1, -1));
+		for (j = i, k = 14; VALID(j, k); j++, k--)
+			AssocVec[j][k].push_back(VecNo);
+		++VecNo;
+	}
+	for (j = 4; j < 14; j++)
+	{
+		Vecs.push_back(VectorStart(0, j, 1, -1));
+		for (i = 0, k = j; VALID(i, k); i++, k--)
+			AssocVec[i][k].push_back(VecNo);
+		++VecNo;
 	}
 }
 

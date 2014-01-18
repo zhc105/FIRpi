@@ -145,6 +145,7 @@ std::string FIRDaemon::GetStatusJson()
 	lock.Lock();
 	json << "\"Turn\":" << Turn;
 	json << ",\"HumanTurn\":" << (HumanTurn ? 1 : 0);
+	json << ",\"AgentColor\":" << AgentColor; 
 	json << ",\"Winner\":" << Winner;
 	json << ",\"Busy\":" << (Busy ? 1 : 0);
 	json << ",\"Board\":[";
@@ -171,7 +172,7 @@ int FIRDaemon::Start()
 	socklen_t sin_size;
 	struct sockaddr_in saddr, caddr;
 
-	daemon(1, 0);
+	//daemon(1, 0);
 	MyLog::WriteLog("Initializing server...", 0);
 
 	ssock = socket(AF_INET, SOCK_STREAM, 0);
@@ -243,6 +244,7 @@ void FIRDaemon::CreateAgent(std::string AgentName, int AgentColor)
 	}
 	/* Get initial status */
 	lock.Lock();
+	this->AgentColor = AgentColor;
 	Winner = 0;
 	Agent->GetStatus(Brd, HumanTurn, Turn);
 
