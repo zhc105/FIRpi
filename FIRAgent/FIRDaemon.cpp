@@ -172,7 +172,7 @@ int FIRDaemon::Start()
 	socklen_t sin_size;
 	struct sockaddr_in saddr, caddr;
 
-	//daemon(1, 0);
+	daemon(1, 0);
 	MyLog::WriteLog("Initializing server...", 0);
 
 	ssock = socket(AF_INET, SOCK_STREAM, 0);

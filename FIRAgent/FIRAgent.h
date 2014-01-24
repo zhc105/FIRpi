@@ -28,17 +28,17 @@ public:
 class FIRAgent : public IFIRAgent
 {
 private:
-	int MaxNums[72][2][2];
-	int SRange[15][15];
-        int brd[15][15];
-        int root_score[15][15];
+	int (* MaxNums)[2][2];
+	int (* VecBak) [2][2], stk;
+	int (* SRange)[15];
+        int (* brd)[15];
+        int (* root_score)[15];
         int Self, Opp;
         int Turn, SelfTurn;
         int MaxDepth;
 	std::vector<VectorStart> Vecs;
 	std::vector<int> AssocVec[15][15];
-	int VecBak[50][2][2], stk;
-
+	
 private:
         int AgentSearch(int depth, int alpha, int beta, int score[15][15]);
 	void CountNums(int c, int Nums[3][6]);
@@ -53,6 +53,7 @@ private:
 
 public:
         FIRAgent(int AgentColor, int SearchDepth, int GameMode);
+	~FIRAgent();
         void AgentGo();
         void HumanGo(int x, int y);
 	void GetStatus(int (*Board)[15], bool& HumanTurn, int& TotalTurns);

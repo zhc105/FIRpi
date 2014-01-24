@@ -2,9 +2,14 @@
 
 FIRAgent::FIRAgent(int AgentColor, int SearchDepth = 3, int GameMode = 0) : IFIRAgent("zhc105")
 {
-	memset(brd, 0, sizeof(brd));
-	memset(SRange, 0x7f, sizeof(SRange));
-	memset(MaxNums, 0, sizeof(MaxNums));
+	brd = new int[15][15];
+	SRange = new int[15][15];
+	root_score = new int[15][15];
+	MaxNums = new int[72][2][2];
+	VecBak = new int[50][2][2];
+	memset(brd, 0, sizeof(int) * 15 * 15);
+	memset(SRange, 0x7f, sizeof(int) * 15 * 15);
+	memset(MaxNums, 0, sizeof(int) * 72 * 2 * 2);
 	stk = 0;
 	Self = AgentColor;
 	Opp = (1 == Self) ? 2 : 1;
@@ -12,6 +17,15 @@ FIRAgent::FIRAgent(int AgentColor, int SearchDepth = 3, int GameMode = 0) : IFIR
 	SelfTurn = Self - 1;
 	MaxDepth = SearchDepth;
 	InitVector();
+}
+
+FIRAgent::~FIRAgent()
+{
+	delete [] brd;
+	delete [] SRange;
+	delete [] root_score;
+	delete [] MaxNums;
+	delete [] VecBak;
 }
 
 int FIRAgent::ScanLine(int Color, int Line[6], int& Type)
@@ -78,7 +92,7 @@ void FIRAgent::UpdateVector(int VecId)
 	VectorStart vec = Vecs[VecId];
 	int x, y, i, now = 0, num, sum = 0, line[30], t;
 
-	memset(MaxNums[VecId], 0, sizeof(MaxNums[VecId]));
+	memset(MaxNums[VecId], 0, sizeof(int) * 2 * 2);
 
 	x = vec.x;
 	y = vec.y;
@@ -127,13 +141,13 @@ int FIRAgent::ContinuousScoreOpp(int Color)
 	if (Nums[2][3] > 1)
 		score += 1000;
 	else if (Nums[2][3] > 0)
-		score += 100;
+		score += 150;
 	if (Nums[2][3] > 0 && Nums[1][4] > 0)
 		score += 1500;
 	if (Nums[1][4] > 1)	
 		score += 2000;
 	else if (Nums[1][4] > 0)
-		score += 1000;
+		score += 200;
 	if (Nums[2][4] > 0)
 		score += 4000;
 	if (Nums[1][5] > 0)
@@ -224,9 +238,8 @@ void FIRAgent::ChessSet(int d, int x, int y, int c, bool bak = false)
 	// Update vector
 	for (std::vector<int>::iterator p = AssocVec[x][y].begin(); p != AssocVec[x][y].end(); p++)
 	{
-		//if (bak)
-		//	memcpy(&VecBak[stk++][0][0], &MaxNums[*p][0][0], sizeof(VecBak[0]));
-		//if (stk > 30) printf("%d\n", stk);
+		if (bak)
+			memcpy(VecBak[stk++], MaxNums[*p], sizeof(int) * 2 * 2);
 		UpdateVector(*p);
 	}
 }
@@ -237,10 +250,7 @@ void FIRAgent::ChessClear(int x, int y)
 	// recovery vector
 	for (std::vector<int>::reverse_iterator p = AssocVec[x][y].rbegin(); p != AssocVec[x][y].rend(); p++)
 	{
-		//memcpy(MaxNums[*p], VecBak[--stk], sizeof(VecBak[0]));
-		//--stk;
-		
-		UpdateVector(*p);
+		memcpy(MaxNums[*p], VecBak[--stk], sizeof(int) * 2 * 2);
 	}
 }
 
@@ -257,7 +267,7 @@ int FIRAgent::AgentSearch(int depth, int alpha, int beta, int score[15][15])
 	int SRange_bak[15][15];
 	
 	/*Search subnodes*/
-	memcpy(SRange_bak, SRange, sizeof(SRange));
+	memcpy(SRange_bak, SRange, sizeof(int) * 15 * 15);
 	for (i = 0; i < 15 * 15; i++)
 	{
 		int x = i / 15, y = i % 15;
@@ -287,7 +297,7 @@ int FIRAgent::AgentSearch(int depth, int alpha, int beta, int score[15][15])
 			}
 		}
 	}
-	memcpy(SRange, SRange_bak, sizeof(SRange));
+	memcpy(SRange, SRange_bak, sizeof(int) * 15 * 15);
 	return ret;
 }
 
@@ -295,7 +305,7 @@ void FIRAgent::AgentGo()
 {
 	if ((Turn & 1) != SelfTurn)
 		return;
-	memset(root_score, 0x80, sizeof(root_score));
+	memset(root_score, 0x80, sizeof(int) * 15 * 15);
 	if (0 == Turn)	// First step
 	{
 		ChessSet(0, 7, 7, Self, false);
@@ -343,7 +353,7 @@ void FIRAgent::HumanGo(int x, int y)
 
 void FIRAgent::GetStatus(int (*Board)[15], bool& HumanTurn, int& TotalTurns)
 {
-	memcpy(Board, brd, sizeof(brd));
+	memcpy(Board, brd, sizeof(int) * 15 * 15);
 	if ((Turn & 1) != SelfTurn)
 		HumanTurn = true;
 	else

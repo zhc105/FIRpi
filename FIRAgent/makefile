@@ -1,5 +1,5 @@
 CC = g++
-CFLAGS = -g
+CFLAGS = -O2 -g
 LIBS = -lm -lpthread
 SOURCES = IFIRAgent.cpp FIRAgent.cpp FIRDaemon.cpp MyLock.cpp MyLog.cpp main.cpp
 OBJS = IFIRAgent.o FIRAgent.o FIRDaemon.o MyLock.o MyLog.o main.o
