@@ -1,8 +1,22 @@
 CC = g++
 CFLAGS = -O2 -g
 LIBS = -lm -lpthread
-SOURCES = IFIRAgent.cpp FIRAgent.cpp FIRDaemon.cpp MyLock.cpp MyLog.cpp main.cpp
-OBJS = IFIRAgent.o FIRAgent.o FIRDaemon.o MyLock.o MyLog.o main.o
+SOURCES =	IFIRAgent.cpp \
+		FIRAgent.cpp \
+		DoublePlayer.cpp \
+		FIRDaemon.cpp \
+		MyLock.cpp \
+		MyLog.cpp \
+		main.cpp
+
+OBJS = 	IFIRAgent.o \
+	FIRAgent.o \
+	DoublePlayer.o \
+	FIRDaemon.o \
+	MyLock.o \
+	MyLog.o \
+	main.o
+
 TARGET = FIRDaemon
 
 $(TARGET): $(OBJS) 
@@ -13,6 +27,9 @@ IFIRAgent.o: IFIRAgent.cpp IFIRAgent.h
 
 FIRAgent.o: FIRAgent.cpp FIRAgent.h
 	$(CC) $(CFLAGS) -c FIRAgent.cpp
+
+DoublePlayer.o: DoublePlayer.cpp DoublePlayer.h
+	$(CC) $(CFLAGS) -c DoublePlayer.cpp
 
 FIRDaemon.o: FIRDaemon.cpp FIRDaemon.h
 	$(CC) $(CFLAGS) -c FIRDaemon.cpp
@@ -33,6 +50,10 @@ IFIRAgent.h:
 FIRAgent.cpp:
 
 FIRAgent.h:
+
+DoublePlayer.cpp:
+
+DoublePlayer.h:
 
 FIRDaemon.cpp:
 

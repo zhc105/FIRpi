@@ -56,7 +56,7 @@ public:
 	~FIRAgent();
         void AgentGo();
         void HumanGo(int x, int y);
-	void GetStatus(int (*Board)[15], bool& HumanTurn, int& TotalTurns);
+	void GetStatus(int (*Board)[15], bool& HumanTurn, int& TotalTurns, int& NextColor);
 	int CheckOver();
 
         void PrintChess();

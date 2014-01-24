@@ -6,6 +6,7 @@
 #include <netinet/in.h>
 #include "IFIRAgent.h"
 #include "FIRAgent.h"
+#include "DoublePlayer.h"
 #include "MyLock.h"
 
 class FIRDaemon
@@ -13,7 +14,7 @@ class FIRDaemon
 private:
 	int Turn;
 	int Brd[15][15];
-	int Winner, AgentColor;
+	int Winner, NextColor;
 	bool Busy, HumanTurn;
 	IFIRAgent *Agent;
 	MyLock lock;

@@ -77,7 +77,12 @@ void * FIRDaemon::AgentAction(void *arg)
 		daemon->Agent->AgentGo();
 		// Update status
 		daemon->lock.Lock();
-		daemon->Agent->GetStatus(daemon->Brd, daemon->HumanTurn, daemon->Turn);
+		daemon->Agent->GetStatus(
+				daemon->Brd, 
+				daemon->HumanTurn, 
+				daemon->Turn, 
+				daemon->NextColor
+			);
 		daemon->Winner = daemon->Agent->CheckOver();
 		daemon->lock.Unlock();
 	}
@@ -116,7 +121,7 @@ void FIRDaemon::HumanGo(int x, int y)
 		Agent->HumanGo(x, y);
 		// Update status
 		Winner = Agent->CheckOver();
-		Agent->GetStatus(Brd, HumanTurn, Turn);
+		Agent->GetStatus(Brd, HumanTurn, Turn, NextColor);
 		if (!Winner && !HumanTurn)
 		{
 			// Agent turn (create new thread)
@@ -145,7 +150,7 @@ std::string FIRDaemon::GetStatusJson()
 	lock.Lock();
 	json << "\"Turn\":" << Turn;
 	json << ",\"HumanTurn\":" << (HumanTurn ? 1 : 0);
-	json << ",\"AgentColor\":" << AgentColor; 
+	json << ",\"NextColor\":" << NextColor; 
 	json << ",\"Winner\":" << Winner;
 	json << ",\"Busy\":" << (Busy ? 1 : 0);
 	json << ",\"Board\":[";
@@ -237,6 +242,12 @@ void FIRDaemon::CreateAgent(std::string AgentName, int AgentColor)
 			delete Agent;
 		Agent = new FIRAgent(AgentColor, 3, 0);
 	}
+	else if (AgentName == "DoublePlayer")
+	{
+		if (Agent != NULL)
+			delete Agent;
+		Agent = new DoublePlayer;
+	}
 	else
 	{
 		MyLog::WriteLog("Agent not found!", 1);
@@ -244,14 +255,13 @@ void FIRDaemon::CreateAgent(std::string AgentName, int AgentColor)
 	}
 	/* Get initial status */
 	lock.Lock();
-	this->AgentColor = AgentColor;
 	Winner = 0;
-	Agent->GetStatus(Brd, HumanTurn, Turn);
+	Agent->GetStatus(Brd, HumanTurn, Turn, NextColor);
 
 	while (!Winner && !HumanTurn)
 	{
 		Agent->AgentGo();
-		Agent->GetStatus(Brd, HumanTurn, Turn);
+		Agent->GetStatus(Brd, HumanTurn, Turn, NextColor);
 		Winner = Agent->CheckOver();
 	}
 	lock.Unlock();
