@@ -183,12 +183,12 @@ int FIRAgent::Evaluate(int depth)
 	if (depth & 1)
 	{
 		score += ContinuousScoreOpp(Self);
-		score -= 2 * ContinuousScoreSelf(Opp);
+		score -= ContinuousScoreSelf(Opp);
 	}
 	else
 	{
 		score += ContinuousScoreSelf(Self);
-		score -= 2 * ContinuousScoreOpp(Opp);
+		score -= ContinuousScoreOpp(Opp);
 	}
 	return score;
 }
@@ -278,7 +278,7 @@ int FIRAgent::AgentSearch(int depth, int alpha, int beta, int score[15][15])
 			int sub_score[15][15] = { 0 };
 			ChessSet(Turn + depth, x, y, (depth & 1) ? Opp : Self, true);	// set chess
 			int val = AgentSearch(depth + 1, subalpha, subbeta, sub_score);	// search subnode
-			ChessClear(x, y);					// clear chess
+			ChessClear(x, y);						// clear chess
 
 			score[x][y] = val;
 			if (depth & 1)
