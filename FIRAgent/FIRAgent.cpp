@@ -79,6 +79,8 @@ int FIRAgent::ScanLine(int Color, int Line[6], int& Type)
 	else
 	{
 		if (hole >= 3) --num;
+		if (hole == 2 && num == 4) --num;
+		if (hole == 1 && num == 3) hole = 0;
 		if (hole || dead || border)
 			Type = 1;
 		else
@@ -90,7 +92,7 @@ int FIRAgent::ScanLine(int Color, int Line[6], int& Type)
 void FIRAgent::UpdateVector(int VecId)
 {
 	VectorStart vec = Vecs[VecId];
-	int x, y, i, now = 0, num, sum = 0, line[30], t;
+	int x, y, i, now = 0, num, sum = 0, line[20], t;
 
 	memset(MaxNums[VecId], 0, sizeof(int) * 2 * 2);
 
@@ -141,13 +143,13 @@ int FIRAgent::ContinuousScoreOpp(int Color)
 	if (Nums[2][3] > 1)
 		score += 1000;
 	else if (Nums[2][3] > 0)
-		score += 150;
+		score += 200;
 	if (Nums[2][3] > 0 && Nums[1][4] > 0)
 		score += 1500;
 	if (Nums[1][4] > 1)	
 		score += 2000;
 	else if (Nums[1][4] > 0)
-		score += 200;
+		score += 100;
 	if (Nums[2][4] > 0)
 		score += 4000;
 	if (Nums[1][5] > 0)
