@@ -4,10 +4,19 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <netinet/in.h>
+#include <vector>
 #include "IFIRAgent.h"
 #include "FIRAgent.h"
 #include "DoublePlayer.h"
 #include "MyLock.h"
+
+class ChessInfo
+{
+public:
+	int x, y, c;
+	ChessInfo(int x, int y, int c);
+	ChessInfo();
+};
 
 class FIRDaemon
 {
@@ -21,7 +30,10 @@ private:
 	sem_t event;
 	pthread_t AgentThread;
 	int csock;
+	std::vector<ChessInfo> Chesses; 
 
+	void BuildListByBrd();
+	void LocalUpdate();
 	void AgentController(int csock);
 	// AgentColor: 1 - Agent first, 2 - Agent last
 	void CreateAgent(std::string AgentName, int AgentColor);	

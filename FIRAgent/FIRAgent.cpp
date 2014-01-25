@@ -80,7 +80,7 @@ int FIRAgent::ScanLine(int Color, int Line[6], int& Type)
 	{
 		if (hole >= 3) --num;
 		if (hole == 2 && num == 4) --num;
-		if (hole == 1 && num == 3) hole = 0;
+		if (num <= 3) hole = 0;
 		if (hole || dead || border)
 			Type = 1;
 		else

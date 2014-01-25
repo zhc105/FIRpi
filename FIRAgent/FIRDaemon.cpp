@@ -7,11 +7,62 @@
 #include "FIRDaemon.h"
 #include "MyLog.h"
 
+ChessInfo::ChessInfo(int x, int y, int c)
+{
+	this->x = x;
+	this->y = y;
+	this->c = c;
+}
+
+ChessInfo::ChessInfo() {}
+
 FIRDaemon::FIRDaemon()
 {
 	Busy = false;
 	Agent = NULL;
 	sem_init(&event, 0, 0);
+	Chesses.clear();
+	memset(Brd, 0, sizeof(Brd));
+}
+
+void FIRDaemon::BuildListByBrd()
+{
+	Chesses.clear();
+	for (int i = 0; i < 15; i++)
+		for (int j = 0; j < 15; j++)
+			if (Brd[i][j] != 0)
+				Chesses.push_back(ChessInfo(i, j, Brd[i][j]));
+}
+
+void FIRDaemon::LocalUpdate()
+{
+	int tmp_brd[15][15];
+	Winner = Agent->CheckOver();
+	Agent->GetStatus(tmp_brd, HumanTurn, Turn, NextColor);
+
+	for (int i = 0; i < 15 * 15; i++)
+	{
+		int x = i / 15, y = i % 15;
+		if (tmp_brd[x][y] != Brd[x][y])
+		{
+			if (tmp_brd[x][y] && !Brd[x][y])
+			{
+				// A new chess has set
+				Brd[x][y] = tmp_brd[x][y];
+				Chesses.push_back(ChessInfo(x, y, Brd[x][y]));
+			}
+			else
+			{
+				// Board error! rebuild list
+				std::string errmsg = "Board error! Agent: " + Agent->GetAgentName();
+				MyLog::WriteLog(errmsg.c_str(), 1);
+
+				memcpy(Brd, tmp_brd, sizeof(Brd));
+				BuildListByBrd();
+				break;
+			}
+		}
+	}
 }
 
 void FIRDaemon::AgentController(int csock)
@@ -77,13 +128,7 @@ void * FIRDaemon::AgentAction(void *arg)
 		daemon->Agent->AgentGo();
 		// Update status
 		daemon->lock.Lock();
-		daemon->Agent->GetStatus(
-				daemon->Brd, 
-				daemon->HumanTurn, 
-				daemon->Turn, 
-				daemon->NextColor
-			);
-		daemon->Winner = daemon->Agent->CheckOver();
+		daemon->LocalUpdate();
 		daemon->lock.Unlock();
 	}
 
@@ -120,8 +165,7 @@ void FIRDaemon::HumanGo(int x, int y)
 	{
 		Agent->HumanGo(x, y);
 		// Update status
-		Winner = Agent->CheckOver();
-		Agent->GetStatus(Brd, HumanTurn, Turn, NextColor);
+		LocalUpdate();
 		if (!Winner && !HumanTurn)
 		{
 			// Agent turn (create new thread)
@@ -142,7 +186,6 @@ void FIRDaemon::HumanGo(int x, int y)
 std::string FIRDaemon::GetStatusJson()
 {
 	std::stringstream json;
-	bool not_first = false;
 
 	// Package current status with json format
 	json << "{";
@@ -154,16 +197,12 @@ std::string FIRDaemon::GetStatusJson()
 	json << ",\"Winner\":" << Winner;
 	json << ",\"Busy\":" << (Busy ? 1 : 0);
 	json << ",\"Board\":[";
-	for(int i = 0; i < 15; i++)
-		for (int j = 0; j < 15; j++)
-			if (Brd[i][j])
-			{
-				if (not_first)
-					json << ",";
-				else
-					not_first = true;
-				json << "{\"x\":" << i << ",\"y\":" << j << ",\"c\":" << Brd[i][j] << "}";
-			}
+	for (std::vector<ChessInfo>::iterator p = Chesses.begin(); p != Chesses.end(); p++)
+	{
+		if (p != Chesses.begin())
+			json << ",";
+		json << "{\"x\":" << (*p).x << ",\"y\":" << (*p).y << ",\"c\":" << (*p).c << "}";
+	}
 	json << "]";
 	lock.Unlock();
 
@@ -255,14 +294,13 @@ void FIRDaemon::CreateAgent(std::string AgentName, int AgentColor)
 	}
 	/* Get initial status */
 	lock.Lock();
-	Winner = 0;
-	Agent->GetStatus(Brd, HumanTurn, Turn, NextColor);
+	LocalUpdate();
+	Chesses.clear();
 
 	while (!Winner && !HumanTurn)
 	{
 		Agent->AgentGo();
-		Agent->GetStatus(Brd, HumanTurn, Turn, NextColor);
-		Winner = Agent->CheckOver();
+		LocalUpdate();
 	}
 	lock.Unlock();
 
