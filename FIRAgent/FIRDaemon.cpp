@@ -37,8 +37,7 @@ void FIRDaemon::BuildListByBrd()
 void FIRDaemon::LocalUpdate()
 {
 	int tmp_brd[15][15];
-	Winner = Agent->CheckOver();
-	Agent->GetStatus(tmp_brd, HumanTurn, Turn, NextColor);
+	Agent->GetStatus(tmp_brd, HumanTurn, Turn, NextColor, Winner);
 
 	for (int i = 0; i < 15 * 15; i++)
 	{

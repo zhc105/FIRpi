@@ -22,12 +22,13 @@ void DoublePlayer::HumanGo(int x, int y)
 	++Turn;
 }
 
-void DoublePlayer::GetStatus(int (*Board)[15], bool& HumanTurn, int& TotalTurns, int& NextColor)
+void DoublePlayer::GetStatus(int (*Board)[15], bool& HumanTurn, int& TotalTurns, int& NextColor, int& Winner)
 {
 	memcpy(Board, Brd, sizeof(Brd));
 	HumanTurn = true;
 	TotalTurns = Turn;
 	NextColor = this->NextColor;
+	Winner = CheckOver();
 }
 
 int DoublePlayer::CheckOver()

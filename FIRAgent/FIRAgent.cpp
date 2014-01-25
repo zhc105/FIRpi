@@ -353,7 +353,12 @@ void FIRAgent::HumanGo(int x, int y)
 	++Turn;
 }
 
-void FIRAgent::GetStatus(int (*Board)[15], bool& HumanTurn, int& TotalTurns, int& NextColor)
+void FIRAgent::GetStatus(
+		int (*Board)[15], 
+		bool& HumanTurn, 
+		int& TotalTurns, 
+		int& NextColor,
+		int& Winner)
 {
 	memcpy(Board, brd, sizeof(int) * 15 * 15);
 	if ((Turn & 1) != SelfTurn)
@@ -365,6 +370,7 @@ void FIRAgent::GetStatus(int (*Board)[15], bool& HumanTurn, int& TotalTurns, int
 		NextColor = Self;
 	else
 		NextColor = Opp;
+	Winner = CheckOver();
 }
 
 void FIRAgent::PrintChess()

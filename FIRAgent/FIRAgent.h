@@ -45,6 +45,7 @@ private:
 	int ContinuousScoreOpp(int Color);
 	int ContinuousScoreSelf(int Color);
 	int Evaluate(int depth);
+	int CheckOver();
 	void UpdateVector(int VecId);
 	int ScanLine(int Color, int Line[6], int& Type);
 	void ChessSet(int d, int x, int y, int c, bool bak);
@@ -56,9 +57,8 @@ public:
 	~FIRAgent();
         void AgentGo();
         void HumanGo(int x, int y);
-	void GetStatus(int (*Board)[15], bool& HumanTurn, int& TotalTurns, int& NextColor);
-	int CheckOver();
-
+	void GetStatus(int (*Board)[15], bool& HumanTurn, int& TotalTurns, int& NextColor, int& Winner);
+	
         void PrintChess();
 
 };
