@@ -8,7 +8,7 @@
 #include <vector>
 #include "IFIRAgent.h"
 
-#define INT_MAX 0x7FFFFFFF
+#define INFINITE 0x7FFFFFFF
 #define VALID(_X, _Y) ( (_X) >= 0 && (_Y) >= 0 && (_X) < 15 && (_Y) < 15)
 
 class VectorStart

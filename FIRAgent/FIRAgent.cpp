@@ -138,7 +138,7 @@ int FIRAgent::ContinuousScoreOpp(int Color)
 	int score = 0, Nums[3][6];
 	CountNums(Color - 1, Nums);
 	score += Nums[2][1] *  2 + Nums[1][1] * 1;
-	score += Nums[2][2] * 10 + Nums[1][2] * 5;
+	score += Nums[2][2] * 20 + Nums[1][2] * 5;
 	score += Nums[1][3] * 50;
 	if (Nums[2][3] > 1)
 		score += 1000;
@@ -164,8 +164,8 @@ int FIRAgent::ContinuousScoreSelf(int Color)
 	int score = 0, Nums[3][6];
 	CountNums(Color - 1, Nums);
 	score += Nums[2][1] *  2 + Nums[1][1] * 1;
-	score += Nums[2][2] * 20 + Nums[1][2] * 5;
-	score += Nums[1][3] * 50;
+	score += Nums[2][2] * 30 + Nums[1][2] * 5;
+	score += Nums[1][3] * 80;
 	if (Nums[2][3] > 0)
 		score += 2000;
 	if (Nums[2][4] > 0 || Nums[1][4] > 0)
@@ -264,7 +264,7 @@ int FIRAgent::AgentSearch(int depth, int alpha, int beta, int score[15][15])
 	//printf("score: %d\n", val);
 	if (depth >= MaxDepth)
 		return val;
-	int i, j, ret = (depth & 1) ? INT_MAX : -INT_MAX;
+	int i, j, ret = (depth & 1) ? INFINITE : -INFINITE;
 	int subalpha = alpha, subbeta = beta;
 	int SRange_bak[15][15];
 	
@@ -314,8 +314,8 @@ void FIRAgent::AgentGo()
 	}
 	else
 	{
-		int alpha = -INT_MAX, beta = INT_MAX;
-		int max_x = -1, max_y = -1, max_v = -INT_MAX;
+		int alpha = -INFINITE, beta = INFINITE;
+		int max_x = -1, max_y = -1, max_v = -INFINITE;
 		AgentSearch(0, alpha, beta, root_score);
 
 		for (int i = 0; i < 15; i++)
