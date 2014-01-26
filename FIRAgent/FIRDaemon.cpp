@@ -293,9 +293,11 @@ void FIRDaemon::CreateAgent(std::string AgentName, int AgentColor)
 	}
 	/* Get initial status */
 	lock.Lock();
-	LocalUpdate();
-	Chesses.clear();
 
+	memset(Brd, 0, sizeof(Brd));
+	Chesses.clear();
+	LocalUpdate();
+	
 	while (!Winner && !HumanTurn)
 	{
 		Agent->AgentGo();
