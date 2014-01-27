@@ -16,13 +16,65 @@ ChessInfo::ChessInfo(int x, int y, int c)
 
 ChessInfo::ChessInfo() {}
 
+AgentStat::AgentStat(int tf, int tl, int wf, int wl)
+{
+	TotalF = tf;
+	TotalL = tl;
+	WinF = wf;
+	WinL = wl;
+}
+
+AgentStat::AgentStat() {}
+
 FIRDaemon::FIRDaemon()
 {
+	Started = false;
 	Busy = false;
 	Agent = NULL;
 	sem_init(&event, 0, 0);
 	Chesses.clear();
 	memset(Brd, 0, sizeof(Brd));
+	LoadAgentStat();
+}
+
+void FIRDaemon::LoadAgentStat()
+{
+	std::string name;
+	int tf, tl, wf, wl;
+
+	std::ifstream fin; 
+	AgentSts.clear();
+
+	fin.open("AgentStat");
+
+	if (!fin)
+		return;
+
+	while(fin >> name >> tf >> tl >> wf >> wl)
+	{
+		AgentSts[name] = AgentStat(tf, tl, wf, wl);
+	}
+	
+	fin.close();
+}
+
+void FIRDaemon::SaveAgentStat()
+{
+	std::map<std::string, AgentStat>::iterator p;
+	std::ofstream fout;
+
+	fout.open("AgentStat");
+
+	for (p = AgentSts.begin(); p != AgentSts.end(); p++)
+	{
+		int tf = p->second.TotalF, tl = p->second.TotalL;
+		int wf = p->second.WinF, wl = p->second.WinL;
+		fout << p->first << " ";
+		fout << tf << " ";
+		fout << tl << " ";
+		fout << wf << " ";
+		fout << wl << std::endl;
+	}
 }
 
 void FIRDaemon::BuildListByBrd()
@@ -39,6 +91,47 @@ void FIRDaemon::LocalUpdate()
 	int tmp_brd[15][15];
 	Agent->GetStatus(tmp_brd, HumanTurn, Turn, NextColor, Winner);
 
+	if (Winner && Started) 
+	{
+		std::string name = Agent->GetAgentName();
+		Started = false;
+		if (AgentSts.find(name) == AgentSts.end())
+			AgentSts[name] = AgentStat(0, 0, 0, 0);
+		if (AgentColor == 1)
+		{
+			++AgentSts[name].TotalF;
+			if (Winner == AgentColor)
+			{
+				++AgentSts[name].WinF;
+
+				std::string msg = "Agent(first) win! Agent: " + name;
+				MyLog::WriteLog(msg.c_str(), 0);
+			}
+			else
+			{
+				std::string msg = "Agent(first) lose! Agent: " + name;
+				MyLog::WriteLog(msg.c_str(), 0);
+			}
+		}
+		else
+		{
+			++AgentSts[name].TotalL;
+			if (Winner == AgentColor)
+			{
+				++AgentSts[name].WinL;
+			
+				std::string msg = "Agent(last) win! Agent: " + name;
+				MyLog::WriteLog(msg.c_str(), 0);
+			}
+			else
+			{
+				std::string msg = "Agent(last) lose! Agent: " + name;
+				MyLog::WriteLog(msg.c_str(), 0);
+			}
+		}
+		SaveAgentStat();
+	}
+
 	for (int i = 0; i < 15 * 15; i++)
 	{
 		int x = i / 15, y = i % 15;
@@ -46,6 +139,12 @@ void FIRDaemon::LocalUpdate()
 		{
 			if (tmp_brd[x][y] && !Brd[x][y])
 			{
+				if (tmp_brd[x][y] == AgentColor)
+				{
+					char msg[100];
+					sprintf(msg, "Agent set a chess on %d, %d", x, y);
+					MyLog::WriteLog(msg, 0);
+				}
 				// A new chess has set
 				Brd[x][y] = tmp_brd[x][y];
 				Chesses.push_back(ChessInfo(x, y, Brd[x][y]));
@@ -150,7 +249,7 @@ void * FIRDaemon::ClientThread(void *arg)
 
 void FIRDaemon::HumanGo(int x, int y)
 {
-	char msg[50];
+	char msg[100];
 	snprintf(msg, sizeof(msg), "Client request to set a chess on %d, %d", x, y);
 	MyLog::WriteLog(msg, 0);
 	
@@ -191,6 +290,17 @@ std::string FIRDaemon::GetStatusJson()
 
 	lock.Lock();
 	json << "\"Turn\":" << Turn;
+	if (Agent != NULL)
+	{
+		AgentStat stat;
+		if (AgentSts.find(Agent->GetAgentName()) != AgentSts.end())
+			stat = AgentSts[Agent->GetAgentName()];
+		else
+			stat = AgentStat(0, 0, 0, 0);
+		json << ",\"AgentName\":\"" << Agent->GetAgentName() << "\"";
+		json << ",\"AgentTotal\":" << stat.TotalF + stat.TotalL;
+		json << ",\"AgentWin\":" << stat.WinF + stat.WinL;
+	}
 	json << ",\"HumanTurn\":" << (HumanTurn ? 1 : 0);
 	json << ",\"NextColor\":" << NextColor; 
 	json << ",\"Winner\":" << Winner;
@@ -294,6 +404,8 @@ void FIRDaemon::CreateAgent(std::string AgentName, int AgentColor)
 	/* Get initial status */
 	lock.Lock();
 
+	Started = true;
+	this->AgentColor = AgentColor;
 	memset(Brd, 0, sizeof(Brd));
 	Chesses.clear();
 	LocalUpdate();

@@ -1,10 +1,12 @@
 #ifndef _FIRDAEMON_H_
 #define _FIRDAEMON_H_
 
+#include <vector>
+#include <map>
+#include <fstream>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <netinet/in.h>
-#include <vector>
 #include "IFIRAgent.h"
 #include "FIRAgent.h"
 #include "DoublePlayer.h"
@@ -18,19 +20,33 @@ public:
 	ChessInfo();
 };
 
+class AgentStat
+{
+public:
+	int TotalF, TotalL, WinF, WinL;
+	AgentStat(int tf, int tl, int wf, int wl);
+	AgentStat();
+};
+
 class FIRDaemon
 {
 private:
 	int Turn;
 	int Brd[15][15];
-	int Winner, NextColor;
-	bool Busy, HumanTurn;
+	int Winner, NextColor, AgentColor;
+	bool Busy, HumanTurn, Started;
 	IFIRAgent *Agent;
 	MyLock lock;
 	sem_t event;
 	pthread_t AgentThread;
 	int csock;
-	std::vector<ChessInfo> Chesses; 
+	std::vector<ChessInfo> Chesses;
+
+	std::map<std::string, AgentStat> AgentSts;
+
+private:
+	void LoadAgentStat();
+	void SaveAgentStat();
 
 	void BuildListByBrd();
 	void LocalUpdate();
