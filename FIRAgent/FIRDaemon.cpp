@@ -75,6 +75,8 @@ void FIRDaemon::SaveAgentStat()
 		fout << wf << " ";
 		fout << wl << std::endl;
 	}
+
+	fout.close();
 }
 
 void FIRDaemon::BuildListByBrd()
