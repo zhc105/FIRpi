@@ -5,7 +5,7 @@ FILE *MyLog::LogFile = NULL;
 
 void MyLog::Init()
 {
-	LogFile = fopen(FILENAME, "w");
+	LogFile = fopen(FILENAME, "a");
 	setvbuf(LogFile, NULL, _IOLBF, 512); 
 }
 

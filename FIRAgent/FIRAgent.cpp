@@ -139,7 +139,7 @@ int FIRAgent::ContinuousScoreOpp(int Color)
 	CountNums(Color - 1, Nums);
 	score += Nums[2][1] *  2 + Nums[1][1] * 1;
 	score += Nums[2][2] * 20 + Nums[1][2] * 5;
-	score += Nums[1][3] * 50;
+	score += Nums[1][3] * 100;
 	if (Nums[2][3] > 1)
 		score += 1000;
 	else if (Nums[2][3] > 0)
@@ -149,7 +149,7 @@ int FIRAgent::ContinuousScoreOpp(int Color)
 	if (Nums[1][4] > 1)	
 		score += 2000;
 	else if (Nums[1][4] > 0)
-		score += 100;
+		score += 250;
 	if (Nums[2][4] > 0)
 		score += 4000;
 	if (Nums[1][5] > 0)
@@ -164,8 +164,8 @@ int FIRAgent::ContinuousScoreSelf(int Color)
 	int score = 0, Nums[3][6];
 	CountNums(Color - 1, Nums);
 	score += Nums[2][1] *  2 + Nums[1][1] * 1;
-	score += Nums[2][2] * 30 + Nums[1][2] * 5;
-	score += Nums[1][3] * 80;
+	score += Nums[2][2] * 30 + Nums[1][2] * 10;
+	score += Nums[1][3] * 120;
 	if (Nums[2][3] > 0)
 		score += 2000;
 	if (Nums[2][4] > 0 || Nums[1][4] > 0)
